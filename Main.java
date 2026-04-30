@@ -2,6 +2,7 @@ import com.sun.net.httpserver.HttpServer;
 import exceptions.*;
 import repository.*;
 import model.Producto;
+import java.util.logging.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -9,7 +10,32 @@ import java.net.InetSocketAddress;
 
 public class Main {
 
+    public static final Logger LOGGER = Logger.getLogger(Main.class.getName());
+    
     public static void main(String[] args) throws IOException {
+
+        LOGGER.setUseParentHandlers(false);
+
+        //LOGGER.setLevel(Level.OFF); mata completamente los logs
+
+        
+        /*Logger rootLogger = Logger.getLogger("");
+        Handler[] handlers = rootLogger.getHandlers();
+        for (Handler h : handlers) {
+            rootLogger.removeHandler(h);
+        }*/
+        
+        //Usen FileHandler para crear un archivo .log
+        //denle formato a ese .log con SimpleFormatter()
+        //agreguen ese handler al Logger
+        try {
+            FileHandler fh = new FileHandler("app.log", true);
+            fh.setFormatter(new SimpleFormatter());
+            LOGGER.addHandler(fh);
+        } catch (Exception e) {
+            LOGGER.severe("Error al configurar el logger: " + e.getMessage());
+        }
+
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0); //creamos un servidor que escuche al puerto 8080
 
         //creamos un repositorio (lista de productos) en el que vamos a generar los productos y almacenarlos
@@ -34,16 +60,24 @@ public class Main {
                 
                 response = "<h1>Status 200: OK</h1><p>Producto encontrado: <b>" + p.getNombre() + "</b></p>";
                 statusCode = 200;
+                LOGGER.info("Producto con ID " + id + "encontrado:" + p.getNombre());
 
             } catch (Exception e) {
                 //Verificamos si esa excepcion generica es una de las nuestras con el instanceof
                 if (e instanceof ProductoNoEncotradoException) {
-                    response = "<h1>Error 404</h1><p>" + e.getMessage() + "</p>";
+                    response = "<h1>Error 404 Not Found</h1><p>" + e.getMessage() + "</p>";
                     statusCode = 404;
+                    LOGGER.warning("Producto no encontrado ID: " + e.getMessage());
                 } else {
-                    response = "<h1>Error 400</h1><p>ID invalido o mal formado.</p>";
-                    statusCode = 400;
+                    response = "<h1>Error 500 Internal Server Error</h1>";
+                    statusCode = 500;
+                    LOGGER.severe("Error inesperado");
                 }
+                //codigo 500 Internal Server Error
+
+                //cambiar el else a 500
+                //hacer un else if de alguna manera
+                //hacer las validaciones de error en el try
             }
 
             exchange.sendResponseHeaders(statusCode, response.length());
